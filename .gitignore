@@ -1,2 +1,6 @@
 weight/
 data/
+__pycache__
+.vscode
+.idea
+.data

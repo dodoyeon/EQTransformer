@@ -4,3 +4,4 @@ pandas
 torchtext
 dill
 matplotlib
+spacy

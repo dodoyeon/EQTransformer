@@ -16,7 +16,7 @@ class Embedding(nn.Module):
 
 class PositionalEncoding(nn.Module):
     def __init__(self, emb_dim, max_seq_len=200, pos_dropout=0.1):
-        super().__init__()
+        super(PositionalEncoding, self).__init__()
         pe = torch.zeros(max_seq_len, emb_dim)
         # CODE IMPLEMENTATION
         # for pos in range(max_seq_len):
@@ -27,13 +27,15 @@ class PositionalEncoding(nn.Module):
         div_term = torch.exp(torch.arange(0,emb_dim, 2).float()*(-math.log(10000.0)/emb_dim))
         pe[:, 0::2] = torch.sin(position*div_term)
         pe[:, 1::2] = torch.cos(position*div_term)
-        pe = pe.unsqueeze(0)
+        # pe 와 forward 수정
+        pe = pe.unsqueeze(0).transpose(0, 1)
         self.register_buffer('pe', pe)
         self.dropout = nn.Dropout(pos_dropout) # dropout을 해야하는가 ->네
     def forward(self, x): # in evel, x = emb_dec(64,9,512)->b=64, 9?,emb=512
-        pos = self.pe[:, :x.size(1)]  # self.pe(1,200,512)
-        pos_out = x + pos.detach()
-        return self.dropout(pos_out)
+        # pos = self.pe[:, :x.size(1)]  # self.pe(1,200,512)
+        # pos_out = x + pos.detach()
+        x = x + self.pe[:x.size(0), :]
+        return self.dropout(x)
     
 # <Positional encoding Graph>
 # max_seq_len = 200

@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchtext.data.metrics
 from Dataset import *
+import numpy as np
 
 from transformer import Transformer
 
@@ -61,16 +62,17 @@ def train(model, train_iterator, optimizer, criterion, epochs):
             optimizer.step()
 
             total_loss += loss.item()
+            interval = 10
+            if i % interval == 0 and i > 0:
+                p = int(100*(i+1)/train_len)
+                avg_loss = total_loss / interval
+                ppl = math.exp(avg_loss)
 
-            p = int(100*(i+1)/train_len)
-            avg_loss = total_loss / batch_size
-            ppl = math.exp(avg_loss)
-
-            print("time= %dm: epoch %d iter %d [%s%s]  %d%%  loss = %.3f | ppl = %.3f" %
-                ((time.time() - start_time) // 60, epoch + 1, i + 1, "".join('#' * (p // 5)),
-                    "".join(' ' * (20 - (p // 5))),
-                    p, avg_loss, ppl), end='\r')
-            total_loss = 0
+                print("time= %dm: epoch %d iter %d [%s%s]  %d%%  loss = %.3f | ppl = %.3f" %
+                      ((time.time() - start_time) // 60, epoch + 1, i + 1, "".join('#' * (p // 5)),
+                       "".join(' ' * (20 - (p // 5))),
+                       p, avg_loss, ppl), end='\r')
+                total_loss = 0
 
         torch.save({'epoch': epoch,
                     'model state_dict': model.state_dict(),
@@ -137,8 +139,8 @@ def main():
     n_trg_tokens = len(TRG.vocab.stoi)
     epochs = 18
     emb_size = 512  # emb_dim
-    n_hid = 200  # encoder의 positional ff층 차원수
-    n_layers = 2  # transformer encoder decoder layer 개수
+    n_hid = 2048  # encoder의 positional ff층 차원수
+    n_layers = 6  # transformer encoder decoder layer 개수
     n_head = 8  # multi-head attention head 개수
     d_model = 512
     max_seq_len = 200
@@ -146,7 +148,7 @@ def main():
 
     model = Transformer(src_voca_size=n_src_tokens, trg_voca_size=n_trg_tokens, emb_dim=emb_size, d_ff=n_hid,
                         n_layers=n_layers, n_head=n_head).to(device)
-    criterion = nn.CrossEntropyLoss() # optimizer,loss->to(device) x
+    criterion = nn.CrossEntropyLoss(ignore_index=1) # optimizer,loss->to(device) x
     optimizer = torch.optim.Adam(model.parameters(), betas=(0.9, 0.98), lr=lr)
 
     # print("model's state_dict:")  # 모델의 학습가능한 parameter는 model.parameters()로 접근한다
